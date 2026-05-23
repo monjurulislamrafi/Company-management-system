@@ -1,0 +1,1094 @@
+import { useState, useEffect, useRef } from "react";
+
+// ── Icons (inline SVG components) ──────────────────────────────
+const Icon = ({ d, size = 20, stroke = "currentColor", fill = "none", strokeWidth = 1.8 }) => (
+  <svg width={size} height={size} viewBox="0 0 24 24" fill={fill} stroke={stroke} strokeWidth={strokeWidth} strokeLinecap="round" strokeLinejoin="round">
+    {Array.isArray(d) ? d.map((path, i) => <path key={i} d={path} />) : <path d={d} />}
+  </svg>
+);
+const Icons = {
+  dashboard: "M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z",
+  riders: "M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2 M9 11a4 4 0 1 0 0-8 4 4 0 0 0 0 8z",
+  companies: "M3 21h18 M3 7v14 M21 7v14 M6 21V3h12v18",
+  docs: "M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z M14 2v6h6",
+  salary: "M12 1v22 M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6",
+  earnings: "M23 6l-9.5 9.5-5-5L1 18 M17 6h6v6",
+  slips: "M9 5H7a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V7a2 2 0 0 0-2-2h-2 M9 5a2 2 0 0 0 2 2h2a2 2 0 0 0 2-2 9 5a2 2 0 0 0-2-2h-2a2 2 0 0 0-2 2",
+  bell: "M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9 M13.73 21a2 2 0 0 1-3.46 0",
+  search: "M11 17a6 6 0 1 0 0-12 6 6 0 0 0 0 12z M21 21l-4.35-4.35",
+  sun: "M12 1v2 M12 21v2 M4.22 4.22l1.42 1.42 M18.36 18.36l1.42 1.42 M1 12h2 M21 12h2 M4.22 19.78l1.42-1.42 M18.36 5.64l1.42-1.42 M12 5a7 7 0 1 0 0 14A7 7 0 0 0 12 5z",
+  moon: "M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z",
+  logout: "M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4 M16 17l5-5-5-5 M21 12H9",
+  plus: "M12 5v14 M5 12h14",
+  upload: "M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4 M17 8l-5-5-5 5 M12 3v12",
+  check: "M20 6L9 17l-5-5",
+  x: "M18 6L6 18 M6 6l12 12",
+  chevron: "M9 18l6-6-6-6",
+  menu: "M3 12h18 M3 6h18 M3 18h18",
+  download: "M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4 M7 10l5 5 5-5 M12 15V3",
+  eye: "M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z M12 9a3 3 0 1 0 0 6 3 3 0 0 0 0-6z",
+  edit: "M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7 M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z",
+  trash: "M3 6h18 M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2",
+  filter: "M22 3H2l8 9.46V19l4 2v-8.54L22 3z",
+  globe: "M12 2a10 10 0 1 0 0 20A10 10 0 0 0 12 2z M2 12h20 M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z",
+  alert: "M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z M12 9v4 M12 17h.01",
+  trend: "M23 6l-9.5 9.5-5-5L1 18",
+  users: ["M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2", "M23 21v-2a4 4 0 0 0-3-3.87", "M16 3.13a4 4 0 0 1 0 7.75", "M9 11a4 4 0 1 0 0-8 4 4 0 0 0 0 8z"],
+  bike: "M5 17H3a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v9a2 2 0 0 1-2 2h-2 M14 17H9",
+};
+
+// ── Sample Data ─────────────────────────────────────────────────
+const COMPANIES = [
+  { id: 1, name: "Al-Noor Delivery Co.", logo: "🏢", address: "Salmiya, Kuwait", contact: "+965 2222-3333", riders: 45, status: "active", revenue: 18400 },
+  { id: 2, name: "Gulf Speed Riders", logo: "⚡", address: "Hawalli, Kuwait", contact: "+965 2444-5555", riders: 32, status: "active", revenue: 13200 },
+  { id: 3, name: "Kuwait Express", logo: "🚀", address: "Farwaniya, Kuwait", contact: "+965 2666-7777", riders: 28, status: "active", revenue: 11500 },
+];
+
+const RIDERS = [
+  { id: "TLB-001", name: "Mohammed Al-Rashidi", nationality: "Kuwaiti", mobile: "+965 9111-2222", email: "m.rashidi@email.com", vehicle: "Motorcycle", company: "Al-Noor Delivery Co.", photo: "👨", status: "active", earnings: 1240 },
+  { id: "TLB-002", name: "Ahmed Hassan", nationality: "Egyptian", mobile: "+965 9333-4444", email: "a.hassan@email.com", vehicle: "Bicycle", company: "Gulf Speed Riders", photo: "👨🏽", status: "active", earnings: 980 },
+  { id: "TLB-003", name: "Ravi Sharma", nationality: "Indian", mobile: "+965 9555-6666", email: "r.sharma@email.com", vehicle: "Motorcycle", company: "Al-Noor Delivery Co.", photo: "👨🏾", status: "inactive", earnings: 760 },
+  { id: "TLB-004", name: "Carlos Mendez", nationality: "Filipino", mobile: "+965 9777-8888", email: "c.mendez@email.com", vehicle: "Motorcycle", company: "Kuwait Express", photo: "👨🏻", status: "active", earnings: 1120 },
+  { id: "TLB-005", name: "Faisal Al-Mutairi", nationality: "Kuwaiti", mobile: "+965 9999-0000", email: "f.mutairi@email.com", vehicle: "Car", company: "Gulf Speed Riders", photo: "👨", status: "active", earnings: 1450 },
+  { id: "TLB-006", name: "Sanjay Kumar", nationality: "Indian", mobile: "+965 9112-3344", email: "s.kumar@email.com", vehicle: "Bicycle", company: "Kuwait Express", photo: "👨🏾", status: "suspended", earnings: 340 },
+];
+
+const DOCUMENTS = [
+  { id: 1, rider: "Mohammed Al-Rashidi", riderId: "TLB-001", type: "Civil ID", number: "280051234567", issue: "2022-03-10", expiry: "2026-03-10", status: "valid" },
+  { id: 2, rider: "Mohammed Al-Rashidi", riderId: "TLB-001", type: "Driving License", number: "DL-2019-456789", issue: "2019-06-15", expiry: "2025-06-15", status: "expiring" },
+  { id: 3, rider: "Ahmed Hassan", riderId: "TLB-002", type: "Passport", number: "A12345678", issue: "2020-01-20", expiry: "2030-01-20", status: "valid" },
+  { id: 4, rider: "Ravi Sharma", riderId: "TLB-003", type: "Residency/Visa", number: "RV-2022-654321", issue: "2022-07-01", expiry: "2025-01-01", status: "expired" },
+  { id: 5, rider: "Carlos Mendez", riderId: "TLB-004", type: "Civil ID", number: "280099876543", issue: "2023-09-15", expiry: "2025-07-10", status: "expiring" },
+  { id: 6, rider: "Faisal Al-Mutairi", riderId: "TLB-005", type: "Driving License", number: "DL-2021-111222", issue: "2021-11-05", expiry: "2027-11-05", status: "valid" },
+];
+
+const EARNINGS = [
+  { month: "Jan", earnings: 42000, pickups: 1820, dropoffs: 1750 },
+  { month: "Feb", earnings: 38500, pickups: 1650, dropoffs: 1590 },
+  { month: "Mar", earnings: 51200, pickups: 2210, dropoffs: 2140 },
+  { month: "Apr", earnings: 47800, pickups: 2050, dropoffs: 1980 },
+  { month: "May", earnings: 55400, pickups: 2380, dropoffs: 2290 },
+  { month: "Jun", earnings: 61200, pickups: 2640, dropoffs: 2550 },
+];
+
+const NOTIFICATIONS = [
+  { id: 1, type: "warning", message: "Ravi Sharma's Residency/Visa is expired", time: "2h ago" },
+  { id: 2, type: "warning", message: "Mohammed Al-Rashidi's Driving License expiring in 28 days", time: "5h ago" },
+  { id: 3, type: "info", message: "New salary import uploaded for May 2025", time: "1d ago" },
+  { id: 4, type: "success", message: "Carlos Mendez documents renewed successfully", time: "2d ago" },
+  { id: 5, type: "warning", message: "Carlos Mendez's Civil ID expiring in 47 days", time: "3d ago" },
+];
+
+const SALARY_IMPORTS = [
+  { id: 1, filename: "talabat_may_2025.xlsx", date: "2025-05-20", riders: 87, status: "success", total: 43200 },
+  { id: 2, filename: "talabat_apr_2025.xlsx", date: "2025-04-18", riders: 85, status: "success", total: 41800 },
+  { id: 3, filename: "talabat_mar_2025.xlsx", date: "2025-03-20", riders: 82, status: "success", total: 39500 },
+];
+
+// ── Micro Chart ─────────────────────────────────────────────────
+const SparkBar = ({ data, color }) => {
+  const max = Math.max(...data);
+  return (
+    <div style={{ display: "flex", alignItems: "flex-end", gap: 3, height: 40 }}>
+      {data.map((v, i) => (
+        <div key={i} style={{
+          width: 8, borderRadius: 3,
+          background: color,
+          height: `${(v / max) * 100}%`,
+          opacity: i === data.length - 1 ? 1 : 0.4 + (i / data.length) * 0.5,
+          transition: "height 0.5s ease"
+        }} />
+      ))}
+    </div>
+  );
+};
+
+// ── Line Chart ──────────────────────────────────────────────────
+const LineChart = ({ data, color = "#f97316", dark }) => {
+  const max = Math.max(...data.map(d => d.earnings));
+  const min = Math.min(...data.map(d => d.earnings));
+  const pts = data.map((d, i) => {
+    const x = (i / (data.length - 1)) * 100;
+    const y = 100 - ((d.earnings - min) / (max - min)) * 80 - 10;
+    return `${x},${y}`;
+  });
+  const area = `0,100 ${pts.join(" ")} 100,100`;
+  return (
+    <div style={{ position: "relative", width: "100%", height: 200 }}>
+      <svg viewBox="0 0 100 100" preserveAspectRatio="none" style={{ width: "100%", height: "100%" }}>
+        <defs>
+          <linearGradient id="lg" x1="0" x2="0" y1="0" y2="1">
+            <stop offset="0%" stopColor={color} stopOpacity="0.3" />
+            <stop offset="100%" stopColor={color} stopOpacity="0" />
+          </linearGradient>
+        </defs>
+        <polygon points={area} fill="url(#lg)" />
+        <polyline points={pts.join(" ")} fill="none" stroke={color} strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
+        {data.map((d, i) => {
+          const [x, y] = pts[i].split(",");
+          return <circle key={i} cx={x} cy={y} r="1.5" fill={color} />;
+        })}
+      </svg>
+      <div style={{ display: "flex", justifyContent: "space-between", marginTop: 8, fontSize: 11, color: dark ? "#6b7280" : "#9ca3af" }}>
+        {data.map(d => <span key={d.month}>{d.month}</span>)}
+      </div>
+    </div>
+  );
+};
+
+// ── Badge ────────────────────────────────────────────────────────
+const Badge = ({ status }) => {
+  const cfg = {
+    active: { bg: "#d1fae5", text: "#065f46", label: "Active" },
+    inactive: { bg: "#f3f4f6", text: "#6b7280", label: "Inactive" },
+    suspended: { bg: "#fee2e2", text: "#991b1b", label: "Suspended" },
+    valid: { bg: "#d1fae5", text: "#065f46", label: "Valid" },
+    expiring: { bg: "#fef3c7", text: "#92400e", label: "Expiring Soon" },
+    expired: { bg: "#fee2e2", text: "#991b1b", label: "Expired" },
+    success: { bg: "#d1fae5", text: "#065f46", label: "Success" },
+  };
+  const c = cfg[status] || cfg.inactive;
+  return (
+    <span style={{ padding: "3px 10px", borderRadius: 20, background: c.bg, color: c.text, fontSize: 12, fontWeight: 600, letterSpacing: "0.3px" }}>
+      {c.label}
+    </span>
+  );
+};
+
+// ── Toast ────────────────────────────────────────────────────────
+const Toast = ({ message, type, onClose }) => {
+  const colors = { success: "#10b981", error: "#ef4444", info: "#3b82f6" };
+  return (
+    <div style={{
+      position: "fixed", bottom: 24, right: 24, zIndex: 9999,
+      background: "#1f2937", color: "#fff", borderRadius: 12,
+      padding: "14px 20px", fontSize: 14, fontWeight: 500,
+      display: "flex", alignItems: "center", gap: 10,
+      boxShadow: "0 20px 40px rgba(0,0,0,0.3)",
+      borderLeft: `4px solid ${colors[type] || colors.info}`,
+      animation: "slideInRight 0.3s ease"
+    }}>
+      <span>{message}</span>
+      <button onClick={onClose} style={{ background: "none", border: "none", color: "#9ca3af", cursor: "pointer", marginLeft: 8 }}>✕</button>
+    </div>
+  );
+};
+
+// ── Modal ────────────────────────────────────────────────────────
+const Modal = ({ open, onClose, title, children, dark }) => {
+  if (!open) return null;
+  return (
+    <div style={{ position: "fixed", inset: 0, zIndex: 1000, display: "flex", alignItems: "center", justifyContent: "center" }}>
+      <div onClick={onClose} style={{ position: "absolute", inset: 0, background: "rgba(0,0,0,0.6)", backdropFilter: "blur(4px)" }} />
+      <div style={{
+        position: "relative", background: dark ? "#111827" : "#fff",
+        borderRadius: 20, padding: 32, width: "min(560px, 90vw)",
+        maxHeight: "85vh", overflow: "auto",
+        boxShadow: "0 25px 60px rgba(0,0,0,0.4)",
+        border: dark ? "1px solid #1f2937" : "1px solid #f3f4f6"
+      }}>
+        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 24 }}>
+          <h3 style={{ margin: 0, fontFamily: "'DM Sans', sans-serif", fontSize: 20, fontWeight: 700, color: dark ? "#f9fafb" : "#111827" }}>{title}</h3>
+          <button onClick={onClose} style={{ background: dark ? "#1f2937" : "#f3f4f6", border: "none", borderRadius: 8, padding: "6px 10px", cursor: "pointer", color: dark ? "#9ca3af" : "#6b7280" }}>✕</button>
+        </div>
+        {children}
+      </div>
+    </div>
+  );
+};
+
+// ── Stat Card ─────────────────────────────────────────────────────
+const StatCard = ({ label, value, icon, color, sub, sparkData, dark }) => (
+  <div style={{
+    background: dark ? "#111827" : "#fff",
+    border: dark ? "1px solid #1f2937" : "1px solid #f3f4f6",
+    borderRadius: 16, padding: "22px 24px",
+    boxShadow: dark ? "0 4px 20px rgba(0,0,0,0.3)" : "0 2px 12px rgba(0,0,0,0.06)",
+    display: "flex", flexDirection: "column", gap: 12
+  }}>
+    <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start" }}>
+      <div>
+        <div style={{ fontSize: 13, color: dark ? "#6b7280" : "#9ca3af", fontWeight: 500, marginBottom: 6 }}>{label}</div>
+        <div style={{ fontSize: 28, fontWeight: 800, color: dark ? "#f9fafb" : "#111827", fontFamily: "'DM Sans', sans-serif", letterSpacing: "-0.5px" }}>{value}</div>
+        {sub && <div style={{ fontSize: 12, color, marginTop: 4, fontWeight: 500 }}>{sub}</div>}
+      </div>
+      <div style={{ background: color + "22", borderRadius: 12, padding: 10, color }}>
+        <Icon d={Icons[icon]} size={22} />
+      </div>
+    </div>
+    {sparkData && <SparkBar data={sparkData} color={color} />}
+  </div>
+);
+
+// ── Main App ─────────────────────────────────────────────────────
+export default function TalabatSystem() {
+  const [dark, setDark] = useState(true);
+  const [lang, setLang] = useState("en");
+  const [page, setPage] = useState("dashboard");
+  const [sideOpen, setSideOpen] = useState(true);
+  const [toast, setToast] = useState(null);
+  const [modal, setModal] = useState(null);
+  const [search, setSearch] = useState("");
+  const [notifOpen, setNotifOpen] = useState(false);
+  const [riderFilter, setRiderFilter] = useState("all");
+  const [riders, setRiders] = useState(RIDERS);
+  const [loginDone, setLoginDone] = useState(false);
+  const [loginForm, setLoginForm] = useState({ email: "admin@talabat.com", pass: "" });
+  const [dragOver, setDragOver] = useState(false);
+  const [importHistory, setImportHistory] = useState(SALARY_IMPORTS);
+
+  const showToast = (message, type = "success") => {
+    setToast({ message, type });
+    setTimeout(() => setToast(null), 3500);
+  };
+
+  const bg = dark ? "#0a0f1a" : "#f8fafc";
+  const card = dark ? "#111827" : "#fff";
+  const border = dark ? "#1f2937" : "#f1f5f9";
+  const text = dark ? "#f9fafb" : "#111827";
+  const sub = dark ? "#6b7280" : "#9ca3af";
+  const sidebarBg = dark ? "#0d1424" : "#fff";
+  const accent = "#f97316";
+
+  // ── LOGIN PAGE ──────────────────────────────────────────────────
+  if (!loginDone) {
+    return (
+      <div style={{
+        minHeight: "100vh", display: "flex", alignItems: "center", justifyContent: "center",
+        background: "linear-gradient(135deg, #0a0f1a 0%, #0f172a 50%, #0a0f1a 100%)",
+        fontFamily: "'DM Sans', 'Segoe UI', sans-serif", position: "relative", overflow: "hidden"
+      }}>
+        <style>{`
+          @import url('https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500;600;700;800;900&display=swap');
+          * { box-sizing: border-box; }
+          @keyframes float { 0%,100%{transform:translateY(0)} 50%{transform:translateY(-12px)} }
+          @keyframes slideIn { from{opacity:0;transform:translateY(20px)} to{opacity:1;transform:translateY(0)} }
+          @keyframes slideInRight { from{opacity:0;transform:translateX(20px)} to{opacity:1;transform:translateX(0)} }
+          @keyframes pulse { 0%,100%{opacity:0.3} 50%{opacity:0.6} }
+          input:focus { outline: none; }
+          button { font-family: inherit; }
+          ::-webkit-scrollbar { width: 5px; }
+          ::-webkit-scrollbar-track { background: transparent; }
+          ::-webkit-scrollbar-thumb { background: #374151; border-radius: 10px; }
+        `}</style>
+        {/* Glow orbs */}
+        {[
+          { top: "10%", left: "5%", size: 300, color: "#f97316" },
+          { top: "60%", right: "5%", size: 250, color: "#3b82f6" },
+        ].map((o, i) => (
+          <div key={i} style={{
+            position: "absolute", borderRadius: "50%",
+            width: o.size, height: o.size,
+            background: `radial-gradient(circle, ${o.color}22, transparent 70%)`,
+            top: o.top, left: o.left, right: o.right,
+            animation: `pulse 4s ease-in-out infinite`,
+            animationDelay: `${i * 1.5}s`
+          }} />
+        ))}
+        <div style={{
+          background: "rgba(17,24,39,0.85)", backdropFilter: "blur(20px)",
+          border: "1px solid #1f2937", borderRadius: 24,
+          padding: "48px 44px", width: "min(440px, 92vw)",
+          animation: "slideIn 0.6s ease",
+          boxShadow: "0 40px 80px rgba(0,0,0,0.5)"
+        }}>
+          <div style={{ textAlign: "center", marginBottom: 36 }}>
+            <div style={{ fontSize: 48, marginBottom: 12, animation: "float 3s ease-in-out infinite" }}>🛵</div>
+            <h1 style={{ margin: "0 0 8px", fontSize: 26, fontWeight: 800, color: "#fff", letterSpacing: "-0.5px" }}>
+              Talabat <span style={{ color: accent }}>RMS</span>
+            </h1>
+            <p style={{ margin: 0, color: "#6b7280", fontSize: 14 }}>Rider Management System — Kuwait</p>
+          </div>
+          {[
+            { label: "Email Address", key: "email", type: "email", placeholder: "admin@talabat.com" },
+            { label: "Password", key: "pass", type: "password", placeholder: "••••••••" },
+          ].map(f => (
+            <div key={f.key} style={{ marginBottom: 18 }}>
+              <label style={{ display: "block", color: "#9ca3af", fontSize: 13, marginBottom: 8, fontWeight: 500 }}>{f.label}</label>
+              <input
+                type={f.type} placeholder={f.placeholder} value={loginForm[f.key]}
+                onChange={e => setLoginForm(p => ({ ...p, [f.key]: e.target.value }))}
+                style={{
+                  width: "100%", padding: "13px 16px", borderRadius: 12,
+                  background: "#0a0f1a", border: "1px solid #1f2937",
+                  color: "#f9fafb", fontSize: 14, transition: "border-color 0.2s"
+                }}
+              />
+            </div>
+          ))}
+          <button
+            onClick={() => { if (loginForm.email) setLoginDone(true); }}
+            style={{
+              width: "100%", padding: "14px", borderRadius: 12,
+              background: `linear-gradient(135deg, ${accent}, #ea580c)`,
+              border: "none", color: "#fff", fontSize: 16, fontWeight: 700,
+              cursor: "pointer", marginTop: 8, letterSpacing: "0.3px",
+              boxShadow: `0 8px 24px ${accent}44`, transition: "transform 0.15s"
+            }}
+            onMouseEnter={e => e.target.style.transform = "scale(1.01)"}
+            onMouseLeave={e => e.target.style.transform = "scale(1)"}
+          >Sign in to Dashboard</button>
+          <p style={{ textAlign: "center", marginTop: 20, color: "#4b5563", fontSize: 12 }}>
+            Demo: use any email • Super Admin Role
+          </p>
+        </div>
+      </div>
+    );
+  }
+
+  // ── NAV ITEMS ───────────────────────────────────────────────────
+  const navItems = [
+    { id: "dashboard", label: "Dashboard", icon: "dashboard" },
+    { id: "riders", label: "Riders", icon: "riders" },
+    { id: "companies", label: "Companies", icon: "companies" },
+    { id: "documents", label: "Documents", icon: "docs" },
+    { id: "earnings", label: "Earnings", icon: "earnings" },
+    { id: "salary", label: "Salary Import", icon: "salary" },
+    { id: "slips", label: "Payment Slips", icon: "slips" },
+  ];
+
+  // ── SIDEBAR ─────────────────────────────────────────────────────
+  const Sidebar = () => (
+    <div style={{
+      width: sideOpen ? 240 : 70, transition: "width 0.3s cubic-bezier(0.4,0,0.2,1)",
+      background: sidebarBg, borderRight: `1px solid ${border}`,
+      display: "flex", flexDirection: "column", height: "100vh",
+      position: "sticky", top: 0, flexShrink: 0,
+      boxShadow: dark ? "4px 0 20px rgba(0,0,0,0.3)" : "4px 0 20px rgba(0,0,0,0.05)"
+    }}>
+      {/* Logo */}
+      <div style={{ padding: "20px 20px", display: "flex", alignItems: "center", gap: 12, borderBottom: `1px solid ${border}` }}>
+        <div style={{ width: 36, height: 36, borderRadius: 10, background: `linear-gradient(135deg, ${accent}, #ea580c)`, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 18, flexShrink: 0 }}>🛵</div>
+        {sideOpen && <div>
+          <div style={{ fontWeight: 800, fontSize: 15, color: text, letterSpacing: "-0.3px", fontFamily: "'DM Sans', sans-serif" }}>Talabat RMS</div>
+          <div style={{ fontSize: 11, color: sub }}>Kuwait Operations</div>
+        </div>}
+      </div>
+      {/* Nav */}
+      <nav style={{ padding: "16px 10px", flex: 1, overflowY: "auto" }}>
+        {navItems.map(item => (
+          <button key={item.id} onClick={() => setPage(item.id)}
+            style={{
+              width: "100%", padding: sideOpen ? "10px 14px" : "10px",
+              borderRadius: 10, border: "none", cursor: "pointer",
+              display: "flex", alignItems: "center", gap: 12,
+              justifyContent: sideOpen ? "flex-start" : "center",
+              background: page === item.id ? (dark ? "#1f2937" : "#fff7ed") : "transparent",
+              color: page === item.id ? accent : sub,
+              fontWeight: page === item.id ? 600 : 400,
+              fontSize: 14, transition: "all 0.2s", marginBottom: 2,
+              fontFamily: "'DM Sans', sans-serif",
+              borderLeft: page === item.id ? `3px solid ${accent}` : "3px solid transparent"
+            }}>
+            <Icon d={Icons[item.icon]} size={18} />
+            {sideOpen && <span>{item.label}</span>}
+          </button>
+        ))}
+      </nav>
+      {/* Bottom */}
+      <div style={{ padding: "16px 10px", borderTop: `1px solid ${border}` }}>
+        <button onClick={() => { setDark(d => !d); }}
+          style={{ width: "100%", padding: "10px 14px", borderRadius: 10, border: "none", cursor: "pointer", display: "flex", alignItems: "center", gap: 12, justifyContent: sideOpen ? "flex-start" : "center", background: "transparent", color: sub, fontSize: 14, fontFamily: "'DM Sans', sans-serif" }}>
+          <Icon d={dark ? Icons.sun : Icons.moon} size={18} />
+          {sideOpen && <span>{dark ? "Light Mode" : "Dark Mode"}</span>}
+        </button>
+        <button onClick={() => setLoginDone(false)}
+          style={{ width: "100%", padding: "10px 14px", borderRadius: 10, border: "none", cursor: "pointer", display: "flex", alignItems: "center", gap: 12, justifyContent: sideOpen ? "flex-start" : "center", background: "transparent", color: "#ef4444", fontSize: 14, fontFamily: "'DM Sans', sans-serif", marginTop: 4 }}>
+          <Icon d={Icons.logout} size={18} stroke="#ef4444" />
+          {sideOpen && <span>Sign Out</span>}
+        </button>
+      </div>
+    </div>
+  );
+
+  // ── TOPBAR ──────────────────────────────────────────────────────
+  const Topbar = ({ title }) => (
+    <div style={{ padding: "16px 28px", borderBottom: `1px solid ${border}`, display: "flex", alignItems: "center", gap: 16, background: dark ? "#0a0f1a" : "#f8fafc", position: "sticky", top: 0, zIndex: 10 }}>
+      <button onClick={() => setSideOpen(s => !s)} style={{ background: dark ? "#1f2937" : "#f1f5f9", border: "none", borderRadius: 8, padding: "7px 10px", cursor: "pointer", color: sub }}>
+        <Icon d={Icons.menu} size={18} />
+      </button>
+      <h2 style={{ margin: 0, fontFamily: "'DM Sans', sans-serif", fontWeight: 700, fontSize: 20, color: text, flex: 1 }}>{title}</h2>
+      {/* Search */}
+      <div style={{ position: "relative" }}>
+        <Icon d={Icons.search} size={16} style={{ position: "absolute", left: 10, top: "50%", transform: "translateY(-50%)", color: sub }} />
+        <input placeholder="Search..." value={search} onChange={e => setSearch(e.target.value)}
+          style={{ padding: "8px 14px 8px 36px", borderRadius: 10, border: `1px solid ${border}`, background: dark ? "#111827" : "#fff", color: text, fontSize: 13, width: 200 }} />
+      </div>
+      {/* Lang */}
+      <button onClick={() => setLang(l => l === "en" ? "ar" : "en")}
+        style={{ background: dark ? "#1f2937" : "#f1f5f9", border: "none", borderRadius: 8, padding: "7px 12px", cursor: "pointer", color: sub, fontSize: 13, fontWeight: 600 }}>
+        {lang === "en" ? "العربية" : "English"}
+      </button>
+      {/* Notifications */}
+      <div style={{ position: "relative" }}>
+        <button onClick={() => setNotifOpen(n => !n)}
+          style={{ background: dark ? "#1f2937" : "#f1f5f9", border: "none", borderRadius: 8, padding: "7px 10px", cursor: "pointer", color: sub, position: "relative" }}>
+          <Icon d={Icons.bell} size={18} />
+          <span style={{ position: "absolute", top: 4, right: 4, width: 8, height: 8, borderRadius: "50%", background: "#ef4444", border: `2px solid ${dark ? "#0a0f1a" : "#f8fafc"}` }} />
+        </button>
+        {notifOpen && (
+          <div style={{
+            position: "absolute", right: 0, top: "calc(100% + 8px)",
+            width: 340, background: card, border: `1px solid ${border}`,
+            borderRadius: 16, boxShadow: "0 20px 40px rgba(0,0,0,0.2)", zIndex: 100, overflow: "hidden"
+          }}>
+            <div style={{ padding: "16px 20px", borderBottom: `1px solid ${border}`, fontWeight: 700, color: text, fontSize: 15 }}>Notifications</div>
+            {NOTIFICATIONS.map(n => (
+              <div key={n.id} style={{ padding: "14px 20px", borderBottom: `1px solid ${border}`, display: "flex", gap: 12, alignItems: "flex-start" }}>
+                <span style={{ fontSize: 20 }}>{n.type === "warning" ? "⚠️" : n.type === "success" ? "✅" : "ℹ️"}</span>
+                <div style={{ flex: 1 }}>
+                  <div style={{ fontSize: 13, color: text, lineHeight: 1.4 }}>{n.message}</div>
+                  <div style={{ fontSize: 11, color: sub, marginTop: 4 }}>{n.time}</div>
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
+      {/* Avatar */}
+      <div style={{ width: 36, height: 36, borderRadius: 10, background: `linear-gradient(135deg, ${accent}, #ea580c)`, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 16, cursor: "pointer" }}>👤</div>
+    </div>
+  );
+
+  // ── DASHBOARD PAGE ───────────────────────────────────────────────
+  const DashboardPage = () => (
+    <div>
+      <Topbar title="Dashboard" />
+      <div style={{ padding: 28 }}>
+        {/* Alert Banner */}
+        <div style={{
+          background: "linear-gradient(135deg, #7c3aed22, #4f46e522)",
+          border: "1px solid #7c3aed44", borderRadius: 14,
+          padding: "16px 20px", marginBottom: 24, display: "flex", alignItems: "center", gap: 12
+        }}>
+          <Icon d={Icons.alert} size={20} stroke="#f59e0b" />
+          <span style={{ color: dark ? "#fcd34d" : "#92400e", fontSize: 14, fontWeight: 500 }}>
+            ⚠️ 2 riders have expiring/expired documents — <button onClick={() => setPage("documents")} style={{ background: "none", border: "none", color: accent, cursor: "pointer", fontWeight: 700, fontSize: 14 }}>Review now</button>
+          </span>
+        </div>
+        {/* Stat Cards */}
+        <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))", gap: 18, marginBottom: 28 }}>
+          <StatCard label="Total Riders" value="105" icon="riders" color="#3b82f6" sub="↑ 12 this month" sparkData={[60, 72, 78, 85, 92, 99, 105]} dark={dark} />
+          <StatCard label="Active Riders" value="87" icon="bike" color="#10b981" sub="83% active rate" sparkData={[50, 62, 68, 74, 80, 84, 87]} dark={dark} />
+          <StatCard label="Expired Docs" value="3" icon="docs" color="#ef4444" sub="Needs attention" sparkData={[2, 3, 2, 4, 3, 2, 3]} dark={dark} />
+          <StatCard label="Monthly Earnings" value="KWD 43.2K" icon="earnings" color="#f97316" sub="↑ 8.4% vs last month" sparkData={[30, 36, 39, 42, 38, 41, 43]} dark={dark} />
+        </div>
+        {/* Charts Row */}
+        <div style={{ display: "grid", gridTemplateColumns: "2fr 1fr", gap: 20, marginBottom: 24 }}>
+          {/* Earnings Chart */}
+          <div style={{ background: card, border: `1px solid ${border}`, borderRadius: 16, padding: 24, boxShadow: dark ? "0 4px 20px rgba(0,0,0,0.3)" : "0 2px 12px rgba(0,0,0,0.06)" }}>
+            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 24 }}>
+              <div>
+                <h3 style={{ margin: 0, fontFamily: "'DM Sans', sans-serif", fontWeight: 700, fontSize: 16, color: text }}>Earnings Overview</h3>
+                <p style={{ margin: "4px 0 0", fontSize: 12, color: sub }}>Monthly total earnings (KWD)</p>
+              </div>
+              <span style={{ background: "#d1fae5", color: "#065f46", padding: "4px 12px", borderRadius: 20, fontSize: 12, fontWeight: 600 }}>+8.4% MTM</span>
+            </div>
+            <LineChart data={EARNINGS} dark={dark} />
+          </div>
+          {/* Company Breakdown */}
+          <div style={{ background: card, border: `1px solid ${border}`, borderRadius: 16, padding: 24, boxShadow: dark ? "0 4px 20px rgba(0,0,0,0.3)" : "0 2px 12px rgba(0,0,0,0.06)" }}>
+            <h3 style={{ margin: "0 0 20px", fontFamily: "'DM Sans', sans-serif", fontWeight: 700, fontSize: 16, color: text }}>Companies</h3>
+            {COMPANIES.map((c, i) => (
+              <div key={c.id} style={{ marginBottom: 18 }}>
+                <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 6 }}>
+                  <span style={{ fontSize: 13, color: text, fontWeight: 500 }}>{c.logo} {c.name.split(" ")[0]}</span>
+                  <span style={{ fontSize: 13, color: sub }}>KWD {(c.revenue / 1000).toFixed(1)}K</span>
+                </div>
+                <div style={{ height: 6, background: dark ? "#1f2937" : "#f3f4f6", borderRadius: 4 }}>
+                  <div style={{ height: "100%", borderRadius: 4, width: `${(c.revenue / 20000) * 100}%`, background: [accent, "#3b82f6", "#10b981"][i] }} />
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+        {/* Recent Activity & Alerts */}
+        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 20 }}>
+          {/* Recent Riders */}
+          <div style={{ background: card, border: `1px solid ${border}`, borderRadius: 16, padding: 24 }}>
+            <h3 style={{ margin: "0 0 20px", fontFamily: "'DM Sans', sans-serif", fontWeight: 700, fontSize: 16, color: text }}>Recent Riders</h3>
+            {RIDERS.slice(0, 4).map(r => (
+              <div key={r.id} style={{ display: "flex", alignItems: "center", gap: 12, marginBottom: 16 }}>
+                <div style={{ width: 38, height: 38, borderRadius: 10, background: dark ? "#1f2937" : "#f3f4f6", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 20 }}>{r.photo}</div>
+                <div style={{ flex: 1 }}>
+                  <div style={{ fontSize: 14, fontWeight: 600, color: text }}>{r.name}</div>
+                  <div style={{ fontSize: 12, color: sub }}>{r.id} · {r.company.split(" ")[0]}</div>
+                </div>
+                <Badge status={r.status} />
+              </div>
+            ))}
+          </div>
+          {/* Document Alerts */}
+          <div style={{ background: card, border: `1px solid ${border}`, borderRadius: 16, padding: 24 }}>
+            <h3 style={{ margin: "0 0 20px", fontFamily: "'DM Sans', sans-serif", fontWeight: 700, fontSize: 16, color: text }}>Document Alerts</h3>
+            {DOCUMENTS.filter(d => d.status !== "valid").map(d => (
+              <div key={d.id} style={{ display: "flex", alignItems: "center", gap: 12, marginBottom: 16 }}>
+                <div style={{ width: 8, height: 8, borderRadius: "50%", background: d.status === "expired" ? "#ef4444" : "#f59e0b", flexShrink: 0 }} />
+                <div style={{ flex: 1 }}>
+                  <div style={{ fontSize: 13, fontWeight: 500, color: text }}>{d.rider}</div>
+                  <div style={{ fontSize: 12, color: sub }}>{d.type} · Expires {d.expiry}</div>
+                </div>
+                <Badge status={d.status} />
+              </div>
+            ))}
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+
+  // ── RIDERS PAGE ──────────────────────────────────────────────────
+  const RidersPage = () => {
+    const [newRider, setNewRider] = useState({ name: "", nationality: "", mobile: "", email: "", vehicle: "Motorcycle", company: "Al-Noor Delivery Co.", status: "active" });
+    const filtered = riders.filter(r => {
+      const q = search.toLowerCase();
+      const matchSearch = !q || r.name.toLowerCase().includes(q) || r.id.toLowerCase().includes(q);
+      const matchFilter = riderFilter === "all" || r.status === riderFilter;
+      return matchSearch && matchFilter;
+    });
+
+    return (
+      <div>
+        <Topbar title="Rider Management" />
+        <div style={{ padding: 28 }}>
+          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 24 }}>
+            <div style={{ display: "flex", gap: 8 }}>
+              {["all", "active", "inactive", "suspended"].map(f => (
+                <button key={f} onClick={() => setRiderFilter(f)}
+                  style={{ padding: "7px 16px", borderRadius: 8, border: `1px solid ${riderFilter === f ? accent : border}`, background: riderFilter === f ? accent + "22" : "transparent", color: riderFilter === f ? accent : sub, cursor: "pointer", fontSize: 13, fontWeight: 500, textTransform: "capitalize" }}>
+                  {f}
+                </button>
+              ))}
+            </div>
+            <div style={{ display: "flex", gap: 10 }}>
+              <button onClick={() => showToast("Exported to Excel!", "success")}
+                style={{ padding: "9px 18px", borderRadius: 10, border: `1px solid ${border}`, background: "transparent", color: sub, cursor: "pointer", fontSize: 14, display: "flex", alignItems: "center", gap: 8 }}>
+                <Icon d={Icons.download} size={16} /> Export
+              </button>
+              <button onClick={() => setModal("addRider")}
+                style={{ padding: "9px 18px", borderRadius: 10, border: "none", background: `linear-gradient(135deg, ${accent}, #ea580c)`, color: "#fff", cursor: "pointer", fontSize: 14, fontWeight: 600, display: "flex", alignItems: "center", gap: 8, boxShadow: `0 4px 14px ${accent}44` }}>
+                <Icon d={Icons.plus} size={16} /> Add Rider
+              </button>
+            </div>
+          </div>
+          {/* Table */}
+          <div style={{ background: card, border: `1px solid ${border}`, borderRadius: 16, overflow: "hidden", boxShadow: dark ? "0 4px 20px rgba(0,0,0,0.3)" : "0 2px 12px rgba(0,0,0,0.06)" }}>
+            <table style={{ width: "100%", borderCollapse: "collapse" }}>
+              <thead>
+                <tr style={{ background: dark ? "#0d1424" : "#f8fafc" }}>
+                  {["Rider ID", "Name", "Nationality", "Mobile", "Vehicle", "Company", "Earnings", "Status", "Actions"].map(h => (
+                    <th key={h} style={{ padding: "14px 18px", textAlign: "left", fontSize: 12, color: sub, fontWeight: 600, letterSpacing: "0.5px", textTransform: "uppercase", borderBottom: `1px solid ${border}` }}>{h}</th>
+                  ))}
+                </tr>
+              </thead>
+              <tbody>
+                {filtered.map((r, i) => (
+                  <tr key={r.id} style={{ borderBottom: `1px solid ${border}`, transition: "background 0.15s" }}
+                    onMouseEnter={e => e.currentTarget.style.background = dark ? "#1f293722" : "#f8fafc"}
+                    onMouseLeave={e => e.currentTarget.style.background = "transparent"}>
+                    <td style={{ padding: "14px 18px", fontSize: 13, color: accent, fontWeight: 600 }}>{r.id}</td>
+                    <td style={{ padding: "14px 18px" }}>
+                      <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+                        <div style={{ width: 34, height: 34, borderRadius: 8, background: dark ? "#1f2937" : "#f3f4f6", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 18 }}>{r.photo}</div>
+                        <span style={{ fontSize: 14, fontWeight: 500, color: text }}>{r.name}</span>
+                      </div>
+                    </td>
+                    <td style={{ padding: "14px 18px", fontSize: 13, color: sub }}>{r.nationality}</td>
+                    <td style={{ padding: "14px 18px", fontSize: 13, color: text }}>{r.mobile}</td>
+                    <td style={{ padding: "14px 18px", fontSize: 13, color: sub }}>{r.vehicle}</td>
+                    <td style={{ padding: "14px 18px", fontSize: 13, color: text }}>{r.company.split(" ")[0]}</td>
+                    <td style={{ padding: "14px 18px", fontSize: 13, fontWeight: 600, color: "#10b981" }}>KWD {r.earnings}</td>
+                    <td style={{ padding: "14px 18px" }}><Badge status={r.status} /></td>
+                    <td style={{ padding: "14px 18px" }}>
+                      <div style={{ display: "flex", gap: 6 }}>
+                        <button onClick={() => setModal({ type: "viewRider", rider: r })} style={{ padding: "5px 10px", borderRadius: 6, border: `1px solid ${border}`, background: "transparent", color: sub, cursor: "pointer", fontSize: 12 }}>View</button>
+                        <button onClick={() => {
+                          setRiders(prev => prev.filter(x => x.id !== r.id));
+                          showToast("Rider removed", "success");
+                        }} style={{ padding: "5px 10px", borderRadius: 6, border: "1px solid #ef444444", background: "#ef444411", color: "#ef4444", cursor: "pointer", fontSize: 12 }}>Remove</button>
+                      </div>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+            <div style={{ padding: "14px 18px", display: "flex", justifyContent: "space-between", alignItems: "center", borderTop: `1px solid ${border}` }}>
+              <span style={{ fontSize: 13, color: sub }}>Showing {filtered.length} of {riders.length} riders</span>
+              <div style={{ display: "flex", gap: 6 }}>
+                {[1, 2, 3].map(p => (
+                  <button key={p} style={{ width: 30, height: 30, borderRadius: 6, border: `1px solid ${p === 1 ? accent : border}`, background: p === 1 ? accent : "transparent", color: p === 1 ? "#fff" : sub, cursor: "pointer", fontSize: 13 }}>{p}</button>
+                ))}
+              </div>
+            </div>
+          </div>
+        </div>
+        {/* Add Rider Modal */}
+        <Modal open={modal === "addRider"} onClose={() => setModal(null)} title="Add New Rider" dark={dark}>
+          {[
+            { label: "Full Name", key: "name", placeholder: "Mohammed Al-Rashidi" },
+            { label: "Nationality", key: "nationality", placeholder: "Kuwaiti" },
+            { label: "Mobile Number", key: "mobile", placeholder: "+965 9111-2222" },
+            { label: "Email", key: "email", placeholder: "rider@email.com" },
+          ].map(f => (
+            <div key={f.key} style={{ marginBottom: 16 }}>
+              <label style={{ display: "block", color: sub, fontSize: 13, marginBottom: 6, fontWeight: 500 }}>{f.label}</label>
+              <input placeholder={f.placeholder} value={newRider[f.key]} onChange={e => setNewRider(p => ({ ...p, [f.key]: e.target.value }))}
+                style={{ width: "100%", padding: "11px 14px", borderRadius: 10, border: `1px solid ${border}`, background: dark ? "#0a0f1a" : "#f8fafc", color: text, fontSize: 14 }} />
+            </div>
+          ))}
+          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 14, marginBottom: 20 }}>
+            {[
+              { label: "Vehicle", key: "vehicle", options: ["Motorcycle", "Bicycle", "Car"] },
+              { label: "Company", key: "company", options: COMPANIES.map(c => c.name) },
+            ].map(f => (
+              <div key={f.key}>
+                <label style={{ display: "block", color: sub, fontSize: 13, marginBottom: 6, fontWeight: 500 }}>{f.label}</label>
+                <select value={newRider[f.key]} onChange={e => setNewRider(p => ({ ...p, [f.key]: e.target.value }))}
+                  style={{ width: "100%", padding: "11px 14px", borderRadius: 10, border: `1px solid ${border}`, background: dark ? "#0a0f1a" : "#f8fafc", color: text, fontSize: 14 }}>
+                  {f.options.map(o => <option key={o}>{o}</option>)}
+                </select>
+              </div>
+            ))}
+          </div>
+          <button onClick={() => {
+            if (!newRider.name) return showToast("Please enter rider name", "error");
+            const id = `TLB-00${riders.length + 1}`;
+            setRiders(prev => [...prev, { ...newRider, id, photo: "👤", earnings: 0 }]);
+            setModal(null);
+            showToast("Rider added successfully!", "success");
+            setNewRider({ name: "", nationality: "", mobile: "", email: "", vehicle: "Motorcycle", company: "Al-Noor Delivery Co.", status: "active" });
+          }} style={{ width: "100%", padding: 13, borderRadius: 10, border: "none", background: `linear-gradient(135deg, ${accent}, #ea580c)`, color: "#fff", fontWeight: 700, fontSize: 15, cursor: "pointer" }}>
+            Add Rider
+          </button>
+        </Modal>
+        {/* View Rider Modal */}
+        <Modal open={modal?.type === "viewRider"} onClose={() => setModal(null)} title="Rider Details" dark={dark}>
+          {modal?.rider && (
+            <div>
+              <div style={{ textAlign: "center", marginBottom: 24 }}>
+                <div style={{ fontSize: 56, marginBottom: 8 }}>{modal.rider.photo}</div>
+                <h3 style={{ margin: 0, color: text, fontFamily: "'DM Sans', sans-serif", fontSize: 20, fontWeight: 700 }}>{modal.rider.name}</h3>
+                <p style={{ margin: "4px 0 0", color: accent, fontWeight: 600 }}>{modal.rider.id}</p>
+              </div>
+              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 14 }}>
+                {[
+                  { label: "Nationality", value: modal.rider.nationality },
+                  { label: "Mobile", value: modal.rider.mobile },
+                  { label: "Email", value: modal.rider.email },
+                  { label: "Vehicle", value: modal.rider.vehicle },
+                  { label: "Company", value: modal.rider.company },
+                  { label: "Monthly Earnings", value: `KWD ${modal.rider.earnings}` },
+                ].map(item => (
+                  <div key={item.label} style={{ background: dark ? "#0a0f1a" : "#f8fafc", borderRadius: 10, padding: "12px 14px" }}>
+                    <div style={{ fontSize: 11, color: sub, marginBottom: 4, textTransform: "uppercase", letterSpacing: "0.5px" }}>{item.label}</div>
+                    <div style={{ fontSize: 14, color: text, fontWeight: 500 }}>{item.value}</div>
+                  </div>
+                ))}
+              </div>
+              <div style={{ marginTop: 16 }}>
+                <div style={{ background: dark ? "#0a0f1a" : "#f8fafc", borderRadius: 10, padding: "12px 14px", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+                  <div style={{ fontSize: 11, color: sub, textTransform: "uppercase", letterSpacing: "0.5px" }}>Status</div>
+                  <Badge status={modal.rider.status} />
+                </div>
+              </div>
+            </div>
+          )}
+        </Modal>
+      </div>
+    );
+  };
+
+  // ── COMPANIES PAGE ───────────────────────────────────────────────
+  const CompaniesPage = () => (
+    <div>
+      <Topbar title="Company Management" />
+      <div style={{ padding: 28 }}>
+        <div style={{ display: "flex", justifyContent: "flex-end", marginBottom: 24 }}>
+          <button onClick={() => showToast("Company creation form — coming soon", "info")}
+            style={{ padding: "9px 18px", borderRadius: 10, border: "none", background: `linear-gradient(135deg, ${accent}, #ea580c)`, color: "#fff", cursor: "pointer", fontSize: 14, fontWeight: 600, display: "flex", alignItems: "center", gap: 8, boxShadow: `0 4px 14px ${accent}44` }}>
+            <Icon d={Icons.plus} size={16} /> Add Company
+          </button>
+        </div>
+        <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(320px, 1fr))", gap: 20 }}>
+          {COMPANIES.map(c => (
+            <div key={c.id} style={{ background: card, border: `1px solid ${border}`, borderRadius: 20, padding: 24, boxShadow: dark ? "0 4px 20px rgba(0,0,0,0.3)" : "0 2px 12px rgba(0,0,0,0.06)", transition: "transform 0.2s, box-shadow 0.2s" }}
+              onMouseEnter={e => { e.currentTarget.style.transform = "translateY(-2px)"; e.currentTarget.style.boxShadow = dark ? "0 8px 30px rgba(0,0,0,0.4)" : "0 8px 24px rgba(0,0,0,0.12)"; }}
+              onMouseLeave={e => { e.currentTarget.style.transform = "translateY(0)"; e.currentTarget.style.boxShadow = dark ? "0 4px 20px rgba(0,0,0,0.3)" : "0 2px 12px rgba(0,0,0,0.06)"; }}>
+              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: 20 }}>
+                <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
+                  <div style={{ width: 48, height: 48, borderRadius: 14, background: dark ? "#1f2937" : "#f3f4f6", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 24 }}>{c.logo}</div>
+                  <div>
+                    <h3 style={{ margin: 0, color: text, fontFamily: "'DM Sans', sans-serif", fontSize: 16, fontWeight: 700 }}>{c.name}</h3>
+                    <p style={{ margin: "3px 0 0", color: sub, fontSize: 12 }}>{c.address}</p>
+                  </div>
+                </div>
+                <Badge status={c.status} />
+              </div>
+              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 12, marginBottom: 20 }}>
+                {[
+                  { label: "Riders", value: c.riders },
+                  { label: "Revenue", value: `KWD ${(c.revenue / 1000).toFixed(1)}K` },
+                  { label: "Status", value: "Active" },
+                ].map(item => (
+                  <div key={item.label} style={{ background: dark ? "#0d1424" : "#f8fafc", borderRadius: 10, padding: "12px", textAlign: "center" }}>
+                    <div style={{ fontSize: 18, fontWeight: 800, color: text, fontFamily: "'DM Sans', sans-serif" }}>{item.value}</div>
+                    <div style={{ fontSize: 11, color: sub, marginTop: 2 }}>{item.label}</div>
+                  </div>
+                ))}
+              </div>
+              <div style={{ display: "flex", gap: 8 }}>
+                <button onClick={() => showToast(`Viewing ${c.name}`, "info")} style={{ flex: 1, padding: "9px", borderRadius: 8, border: `1px solid ${border}`, background: "transparent", color: text, cursor: "pointer", fontSize: 13, fontWeight: 500 }}>View Details</button>
+                <button onClick={() => showToast(`Editing ${c.name}`, "info")} style={{ flex: 1, padding: "9px", borderRadius: 8, border: "none", background: accent + "22", color: accent, cursor: "pointer", fontSize: 13, fontWeight: 600 }}>Edit</button>
+              </div>
+            </div>
+          ))}
+        </div>
+      </div>
+    </div>
+  );
+
+  // ── DOCUMENTS PAGE ───────────────────────────────────────────────
+  const DocumentsPage = () => (
+    <div>
+      <Topbar title="Document Management" />
+      <div style={{ padding: 28 }}>
+        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 16, marginBottom: 28 }}>
+          {[
+            { label: "Valid Documents", value: DOCUMENTS.filter(d => d.status === "valid").length, color: "#10b981", bg: "#d1fae5" },
+            { label: "Expiring Soon", value: DOCUMENTS.filter(d => d.status === "expiring").length, color: "#f59e0b", bg: "#fef3c7" },
+            { label: "Expired", value: DOCUMENTS.filter(d => d.status === "expired").length, color: "#ef4444", bg: "#fee2e2" },
+          ].map(s => (
+            <div key={s.label} style={{ background: card, border: `1px solid ${border}`, borderRadius: 14, padding: 20, display: "flex", alignItems: "center", gap: 14 }}>
+              <div style={{ width: 48, height: 48, borderRadius: 12, background: s.bg, display: "flex", alignItems: "center", justifyContent: "center" }}>
+                <span style={{ fontSize: 22 }}>{s.label.includes("Valid") ? "✅" : s.label.includes("Expiring") ? "⚠️" : "❌"}</span>
+              </div>
+              <div>
+                <div style={{ fontSize: 28, fontWeight: 800, color: s.color, fontFamily: "'DM Sans', sans-serif" }}>{s.value}</div>
+                <div style={{ fontSize: 13, color: sub }}>{s.label}</div>
+              </div>
+            </div>
+          ))}
+        </div>
+        <div style={{ background: card, border: `1px solid ${border}`, borderRadius: 16, overflow: "hidden" }}>
+          <div style={{ padding: "18px 22px", borderBottom: `1px solid ${border}`, display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+            <h3 style={{ margin: 0, color: text, fontFamily: "'DM Sans', sans-serif", fontSize: 16, fontWeight: 700 }}>All Documents</h3>
+            <button onClick={() => showToast("Document upload — use the upload button per row", "info")}
+              style={{ padding: "8px 16px", borderRadius: 8, border: "none", background: `linear-gradient(135deg, ${accent}, #ea580c)`, color: "#fff", cursor: "pointer", fontSize: 13, fontWeight: 600, display: "flex", alignItems: "center", gap: 6 }}>
+              <Icon d={Icons.upload} size={14} /> Upload Document
+            </button>
+          </div>
+          <table style={{ width: "100%", borderCollapse: "collapse" }}>
+            <thead>
+              <tr style={{ background: dark ? "#0d1424" : "#f8fafc" }}>
+                {["Rider", "Rider ID", "Document Type", "Doc Number", "Issue Date", "Expiry Date", "Status"].map(h => (
+                  <th key={h} style={{ padding: "12px 18px", textAlign: "left", fontSize: 12, color: sub, fontWeight: 600, letterSpacing: "0.4px", textTransform: "uppercase", borderBottom: `1px solid ${border}` }}>{h}</th>
+                ))}
+              </tr>
+            </thead>
+            <tbody>
+              {DOCUMENTS.map(d => (
+                <tr key={d.id} style={{ borderBottom: `1px solid ${border}` }}>
+                  <td style={{ padding: "13px 18px", fontSize: 14, color: text, fontWeight: 500 }}>{d.rider}</td>
+                  <td style={{ padding: "13px 18px", fontSize: 13, color: accent, fontWeight: 600 }}>{d.riderId}</td>
+                  <td style={{ padding: "13px 18px", fontSize: 13, color: text }}>{d.type}</td>
+                  <td style={{ padding: "13px 18px", fontSize: 12, color: sub, fontFamily: "monospace" }}>{d.number}</td>
+                  <td style={{ padding: "13px 18px", fontSize: 13, color: sub }}>{d.issue}</td>
+                  <td style={{ padding: "13px 18px", fontSize: 13, color: d.status === "expired" ? "#ef4444" : d.status === "expiring" ? "#f59e0b" : sub, fontWeight: d.status !== "valid" ? 600 : 400 }}>{d.expiry}</td>
+                  <td style={{ padding: "13px 18px" }}><Badge status={d.status} /></td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  );
+
+  // ── EARNINGS PAGE ────────────────────────────────────────────────
+  const EarningsPage = () => (
+    <div>
+      <Topbar title="Earnings & Analytics" />
+      <div style={{ padding: 28 }}>
+        <div style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: 16, marginBottom: 28 }}>
+          {[
+            { label: "Total Monthly", value: "KWD 43,200", color: accent, icon: "💰" },
+            { label: "Total Pickups", value: "2,380", color: "#3b82f6", icon: "📦" },
+            { label: "Total Dropoffs", value: "2,290", color: "#10b981", icon: "🏠" },
+            { label: "Avg Per Rider", value: "KWD 496", color: "#8b5cf6", icon: "📊" },
+          ].map(s => (
+            <div key={s.label} style={{ background: card, border: `1px solid ${border}`, borderRadius: 14, padding: 20 }}>
+              <div style={{ fontSize: 28, marginBottom: 8 }}>{s.icon}</div>
+              <div style={{ fontSize: 22, fontWeight: 800, color: s.color, fontFamily: "'DM Sans', sans-serif" }}>{s.value}</div>
+              <div style={{ fontSize: 13, color: sub, marginTop: 2 }}>{s.label}</div>
+            </div>
+          ))}
+        </div>
+        <div style={{ display: "grid", gridTemplateColumns: "3fr 2fr", gap: 20, marginBottom: 24 }}>
+          <div style={{ background: card, border: `1px solid ${border}`, borderRadius: 16, padding: 24 }}>
+            <h3 style={{ margin: "0 0 24px", color: text, fontFamily: "'DM Sans', sans-serif", fontSize: 16, fontWeight: 700 }}>Monthly Earnings Trend</h3>
+            <LineChart data={EARNINGS} dark={dark} />
+          </div>
+          <div style={{ background: card, border: `1px solid ${border}`, borderRadius: 16, padding: 24 }}>
+            <h3 style={{ margin: "0 0 20px", color: text, fontFamily: "'DM Sans', sans-serif", fontSize: 16, fontWeight: 700 }}>Top Earners</h3>
+            {[...riders].sort((a, b) => b.earnings - a.earnings).slice(0, 5).map((r, i) => (
+              <div key={r.id} style={{ display: "flex", alignItems: "center", gap: 12, marginBottom: 14 }}>
+                <div style={{ width: 24, height: 24, borderRadius: 6, background: [accent, "#3b82f6", "#10b981", "#8b5cf6", "#ec4899"][i] + "33", color: [accent, "#3b82f6", "#10b981", "#8b5cf6", "#ec4899"][i], display: "flex", alignItems: "center", justifyContent: "center", fontSize: 12, fontWeight: 800 }}>{i + 1}</div>
+                <div style={{ fontSize: 22 }}>{r.photo}</div>
+                <div style={{ flex: 1 }}>
+                  <div style={{ fontSize: 13, fontWeight: 600, color: text }}>{r.name}</div>
+                  <div style={{ fontSize: 11, color: sub }}>{r.id}</div>
+                </div>
+                <div style={{ fontSize: 13, fontWeight: 700, color: "#10b981" }}>KWD {r.earnings}</div>
+              </div>
+            ))}
+          </div>
+        </div>
+        <div style={{ background: card, border: `1px solid ${border}`, borderRadius: 16, overflow: "hidden" }}>
+          <div style={{ padding: "18px 22px", borderBottom: `1px solid ${border}`, display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+            <h3 style={{ margin: 0, color: text, fontFamily: "'DM Sans', sans-serif", fontSize: 16, fontWeight: 700 }}>Monthly Breakdown</h3>
+            <button onClick={() => showToast("Exporting earnings report...", "success")} style={{ padding: "8px 16px", borderRadius: 8, border: `1px solid ${border}`, background: "transparent", color: sub, cursor: "pointer", fontSize: 13 }}>Export PDF</button>
+          </div>
+          <table style={{ width: "100%", borderCollapse: "collapse" }}>
+            <thead>
+              <tr style={{ background: dark ? "#0d1424" : "#f8fafc" }}>
+                {["Month", "Total Earnings", "Pickups", "Dropoffs", "Avg Earning", "Growth"].map(h => (
+                  <th key={h} style={{ padding: "12px 18px", textAlign: "left", fontSize: 12, color: sub, fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.4px", borderBottom: `1px solid ${border}` }}>{h}</th>
+                ))}
+              </tr>
+            </thead>
+            <tbody>
+              {EARNINGS.map((e, i) => (
+                <tr key={e.month} style={{ borderBottom: `1px solid ${border}` }}>
+                  <td style={{ padding: "13px 18px", fontSize: 14, color: text, fontWeight: 600 }}>{e.month} 2025</td>
+                  <td style={{ padding: "13px 18px", fontSize: 14, fontWeight: 700, color: "#10b981" }}>KWD {e.earnings.toLocaleString()}</td>
+                  <td style={{ padding: "13px 18px", fontSize: 13, color: text }}>{e.pickups.toLocaleString()}</td>
+                  <td style={{ padding: "13px 18px", fontSize: 13, color: text }}>{e.dropoffs.toLocaleString()}</td>
+                  <td style={{ padding: "13px 18px", fontSize: 13, color: sub }}>KWD {Math.round(e.earnings / 87)}</td>
+                  <td style={{ padding: "13px 18px" }}>
+                    {i > 0 && <span style={{ color: e.earnings > EARNINGS[i - 1].earnings ? "#10b981" : "#ef4444", fontWeight: 600, fontSize: 13 }}>
+                      {e.earnings > EARNINGS[i - 1].earnings ? "↑" : "↓"} {Math.abs(Math.round((e.earnings - EARNINGS[i - 1].earnings) / EARNINGS[i - 1].earnings * 100))}%
+                    </span>}
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  );
+
+  // ── SALARY IMPORT PAGE ───────────────────────────────────────────
+  const SalaryPage = () => {
+    const [dragging, setDragging] = useState(false);
+    return (
+      <div>
+        <Topbar title="Salary Import" />
+        <div style={{ padding: 28 }}>
+          {/* Upload Zone */}
+          <div
+            onDragOver={e => { e.preventDefault(); setDragging(true); }}
+            onDragLeave={() => setDragging(false)}
+            onDrop={e => {
+              e.preventDefault(); setDragging(false);
+              const file = e.dataTransfer.files[0];
+              if (file) {
+                const newImport = { id: importHistory.length + 1, filename: file.name, date: new Date().toISOString().split("T")[0], riders: Math.floor(Math.random() * 20 + 80), status: "success", total: Math.floor(Math.random() * 10000 + 38000) };
+                setImportHistory(prev => [newImport, ...prev]);
+                showToast(`✅ ${file.name} imported successfully!`, "success");
+              }
+            }}
+            style={{
+              border: `2px dashed ${dragging ? accent : border}`,
+              borderRadius: 20, padding: "56px 40px", textAlign: "center", marginBottom: 28,
+              background: dragging ? accent + "08" : card, transition: "all 0.2s", cursor: "pointer"
+            }}>
+            <div style={{ fontSize: 48, marginBottom: 16 }}>📊</div>
+            <h3 style={{ margin: "0 0 8px", color: text, fontFamily: "'DM Sans', sans-serif", fontSize: 20, fontWeight: 700 }}>Drop your Talabat Excel file here</h3>
+            <p style={{ margin: "0 0 20px", color: sub, fontSize: 14 }}>Supports .xlsx, .xls, .csv files — Rider ID matching is automatic</p>
+            <label style={{ padding: "11px 24px", borderRadius: 10, border: "none", background: `linear-gradient(135deg, ${accent}, #ea580c)`, color: "#fff", cursor: "pointer", fontSize: 14, fontWeight: 600, boxShadow: `0 4px 14px ${accent}44` }}>
+              Browse Files
+              <input type="file" accept=".xlsx,.xls,.csv" style={{ display: "none" }} onChange={e => {
+                const file = e.target.files[0];
+                if (file) {
+                  const newImport = { id: importHistory.length + 1, filename: file.name, date: new Date().toISOString().split("T")[0], riders: Math.floor(Math.random() * 20 + 80), status: "success", total: Math.floor(Math.random() * 10000 + 38000) };
+                  setImportHistory(prev => [newImport, ...prev]);
+                  showToast(`✅ ${file.name} imported successfully!`, "success");
+                }
+              }} />
+            </label>
+          </div>
+          {/* Import Requirements */}
+          <div style={{ background: card, border: `1px solid ${border}`, borderRadius: 16, padding: 24, marginBottom: 24 }}>
+            <h3 style={{ margin: "0 0 16px", color: text, fontFamily: "'DM Sans', sans-serif", fontSize: 16, fontWeight: 700 }}>Required Excel Columns</h3>
+            <div style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: 12 }}>
+              {["Rider ID", "Completed Pickups", "Completed Dropoffs", "Pickup Earnings", "Dropoff Earnings", "Bonuses", "Deductions", "Total Payment"].map(col => (
+                <div key={col} style={{ background: dark ? "#0d1424" : "#f8fafc", borderRadius: 8, padding: "10px 14px", display: "flex", alignItems: "center", gap: 8 }}>
+                  <Icon d={Icons.check} size={14} stroke="#10b981" />
+                  <span style={{ fontSize: 13, color: text }}>{col}</span>
+                </div>
+              ))}
+            </div>
+          </div>
+          {/* Import History */}
+          <div style={{ background: card, border: `1px solid ${border}`, borderRadius: 16, overflow: "hidden" }}>
+            <div style={{ padding: "18px 22px", borderBottom: `1px solid ${border}` }}>
+              <h3 style={{ margin: 0, color: text, fontFamily: "'DM Sans', sans-serif", fontSize: 16, fontWeight: 700 }}>Import History</h3>
+            </div>
+            <table style={{ width: "100%", borderCollapse: "collapse" }}>
+              <thead>
+                <tr style={{ background: dark ? "#0d1424" : "#f8fafc" }}>
+                  {["Filename", "Import Date", "Riders Matched", "Total Payout", "Status", "Actions"].map(h => (
+                    <th key={h} style={{ padding: "12px 18px", textAlign: "left", fontSize: 12, color: sub, fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.4px", borderBottom: `1px solid ${border}` }}>{h}</th>
+                  ))}
+                </tr>
+              </thead>
+              <tbody>
+                {importHistory.map(imp => (
+                  <tr key={imp.id} style={{ borderBottom: `1px solid ${border}` }}>
+                    <td style={{ padding: "13px 18px" }}>
+                      <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                        <span style={{ fontSize: 18 }}>📄</span>
+                        <span style={{ fontSize: 13, color: text, fontWeight: 500 }}>{imp.filename}</span>
+                      </div>
+                    </td>
+                    <td style={{ padding: "13px 18px", fontSize: 13, color: sub }}>{imp.date}</td>
+                    <td style={{ padding: "13px 18px", fontSize: 13, color: text, fontWeight: 500 }}>{imp.riders} riders</td>
+                    <td style={{ padding: "13px 18px", fontSize: 13, fontWeight: 700, color: "#10b981" }}>KWD {imp.total.toLocaleString()}</td>
+                    <td style={{ padding: "13px 18px" }}><Badge status={imp.status} /></td>
+                    <td style={{ padding: "13px 18px" }}>
+                      <button onClick={() => showToast("Downloading import report...", "success")} style={{ padding: "5px 12px", borderRadius: 6, border: `1px solid ${border}`, background: "transparent", color: sub, cursor: "pointer", fontSize: 12 }}>Download</button>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    );
+  };
+
+  // ── PAYMENT SLIPS PAGE ───────────────────────────────────────────
+  const SlipsPage = () => {
+    const [selectedRider, setSelectedRider] = useState(riders[0]);
+    const [period, setPeriod] = useState("May 2025");
+
+    return (
+      <div>
+        <Topbar title="Payment Slips" />
+        <div style={{ padding: 28 }}>
+          <div style={{ display: "grid", gridTemplateColumns: "1fr 2fr", gap: 24 }}>
+            {/* Controls */}
+            <div>
+              <div style={{ background: card, border: `1px solid ${border}`, borderRadius: 16, padding: 22, marginBottom: 18 }}>
+                <h3 style={{ margin: "0 0 16px", color: text, fontFamily: "'DM Sans', sans-serif", fontSize: 15, fontWeight: 700 }}>Generate Slip</h3>
+                <label style={{ display: "block", color: sub, fontSize: 13, marginBottom: 8 }}>Select Rider</label>
+                <select value={selectedRider?.id} onChange={e => setSelectedRider(riders.find(r => r.id === e.target.value))}
+                  style={{ width: "100%", padding: "11px 14px", borderRadius: 10, border: `1px solid ${border}`, background: dark ? "#0a0f1a" : "#f8fafc", color: text, fontSize: 14, marginBottom: 16 }}>
+                  {riders.map(r => <option key={r.id} value={r.id}>{r.name}</option>)}
+                </select>
+                <label style={{ display: "block", color: sub, fontSize: 13, marginBottom: 8 }}>Payment Period</label>
+                <select value={period} onChange={e => setPeriod(e.target.value)}
+                  style={{ width: "100%", padding: "11px 14px", borderRadius: 10, border: `1px solid ${border}`, background: dark ? "#0a0f1a" : "#f8fafc", color: text, fontSize: 14, marginBottom: 20 }}>
+                  {["May 2025", "Apr 2025", "Mar 2025"].map(p => <option key={p}>{p}</option>)}
+                </select>
+                <div style={{ display: "flex", gap: 8 }}>
+                  <button onClick={() => showToast("PDF generated and downloaded!", "success")} style={{ flex: 1, padding: "11px", borderRadius: 10, border: "none", background: `linear-gradient(135deg, ${accent}, #ea580c)`, color: "#fff", fontWeight: 700, fontSize: 14, cursor: "pointer" }}>
+                    Export PDF
+                  </button>
+                  <button onClick={() => showToast(`Email sent to ${selectedRider?.email}`, "success")} style={{ flex: 1, padding: "11px", borderRadius: 10, border: `1px solid ${border}`, background: "transparent", color: text, fontWeight: 600, fontSize: 14, cursor: "pointer" }}>
+                    Email
+                  </button>
+                </div>
+              </div>
+            </div>
+            {/* Slip Preview */}
+            <div style={{ background: "#fff", border: "1px solid #e5e7eb", borderRadius: 16, overflow: "hidden", boxShadow: "0 8px 30px rgba(0,0,0,0.15)" }}>
+              {/* Slip Header */}
+              <div style={{ background: "linear-gradient(135deg, #f97316, #ea580c)", padding: "28px 32px", color: "#fff" }}>
+                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start" }}>
+                  <div>
+                    <div style={{ fontSize: 28, marginBottom: 4 }}>🛵</div>
+                    <div style={{ fontFamily: "'DM Sans', sans-serif", fontSize: 22, fontWeight: 800, letterSpacing: "-0.5px" }}>Talabat RMS</div>
+                    <div style={{ fontSize: 12, opacity: 0.8 }}>Kuwait Operations Division</div>
+                  </div>
+                  <div style={{ textAlign: "right" }}>
+                    <div style={{ fontSize: 13, opacity: 0.8 }}>Payment Slip</div>
+                    <div style={{ fontSize: 20, fontWeight: 800 }}>{period}</div>
+                    <div style={{ fontSize: 11, opacity: 0.7, marginTop: 4 }}>Ref: {selectedRider?.id}-{period.replace(" ", "-")}</div>
+                  </div>
+                </div>
+              </div>
+              {/* Rider Info */}
+              <div style={{ padding: "24px 32px", borderBottom: "1px solid #f3f4f6", display: "flex", gap: 20, alignItems: "center" }}>
+                <div style={{ fontSize: 48 }}>{selectedRider?.photo}</div>
+                <div>
+                  <div style={{ fontFamily: "'DM Sans', sans-serif", fontSize: 20, fontWeight: 700, color: "#111827" }}>{selectedRider?.name}</div>
+                  <div style={{ color: "#6b7280", fontSize: 13 }}>{selectedRider?.id} · {selectedRider?.company}</div>
+                  <div style={{ color: "#6b7280", fontSize: 13 }}>{selectedRider?.vehicle} · {selectedRider?.nationality}</div>
+                </div>
+              </div>
+              {/* Earnings Breakdown */}
+              <div style={{ padding: "24px 32px" }}>
+                <table style={{ width: "100%", borderCollapse: "collapse" }}>
+                  <tbody>
+                    {[
+                      { label: "Completed Pickups", value: "238 orders", amount: null },
+                      { label: "Completed Dropoffs", value: "229 orders", amount: null },
+                      { label: "Pickup Earnings", value: "", amount: "KWD 524.00", positive: true },
+                      { label: "Dropoff Earnings", value: "", amount: "KWD 458.00", positive: true },
+                      { label: "Bonuses", value: "", amount: "KWD 120.00", positive: true },
+                      { label: "Deductions", value: "", amount: "- KWD 62.00", positive: false },
+                    ].map(row => (
+                      <tr key={row.label} style={{ borderBottom: "1px solid #f3f4f6" }}>
+                        <td style={{ padding: "12px 0", fontSize: 14, color: "#374151" }}>{row.label}</td>
+                        <td style={{ padding: "12px 0", fontSize: 13, color: "#9ca3af", textAlign: "center" }}>{row.value}</td>
+                        <td style={{ padding: "12px 0", fontSize: 14, fontWeight: row.amount ? 600 : 400, color: row.positive === true ? "#059669" : row.positive === false ? "#ef4444" : "#374151", textAlign: "right" }}>{row.amount}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+                <div style={{ background: "linear-gradient(135deg, #f97316, #ea580c)", borderRadius: 12, padding: "18px 20px", marginTop: 20, display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+                  <div style={{ color: "#fff", fontSize: 16, fontWeight: 700 }}>NET PAYMENT</div>
+                  <div style={{ color: "#fff", fontSize: 28, fontWeight: 900, fontFamily: "'DM Sans', sans-serif" }}>KWD {selectedRider?.earnings || 1040}.00</div>
+                </div>
+                <div style={{ textAlign: "center", marginTop: 16, color: "#9ca3af", fontSize: 12 }}>
+                  Generated by Talabat RMS • {new Date().toLocaleDateString()} • This is an official payment document.
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  };
+
+  // ── RENDER ───────────────────────────────────────────────────────
+  const pages = { dashboard: DashboardPage, riders: RidersPage, companies: CompaniesPage, documents: DocumentsPage, earnings: EarningsPage, salary: SalaryPage, slips: SlipsPage };
+  const CurrentPage = pages[page] || DashboardPage;
+
+  return (
+    <div style={{ display: "flex", minHeight: "100vh", background: bg, fontFamily: "'DM Sans', 'Segoe UI', sans-serif", color: text, direction: lang === "ar" ? "rtl" : "ltr" }} onClick={() => setNotifOpen(false)}>
+      <style>{`
+        @import url('https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500;600;700;800;900&display=swap');
+        * { box-sizing: border-box; }
+        @keyframes slideIn { from{opacity:0;transform:translateY(20px)} to{opacity:1;transform:translateY(0)} }
+        @keyframes slideInRight { from{opacity:0;transform:translateX(20px)} to{opacity:1;transform:translateX(0)} }
+        @keyframes float { 0%,100%{transform:translateY(0)} 50%{transform:translateY(-12px)} }
+        @keyframes pulse { 0%,100%{opacity:0.3} 50%{opacity:0.6} }
+        input, select { outline: none; }
+        button { font-family: inherit; }
+        ::-webkit-scrollbar { width: 5px; }
+        ::-webkit-scrollbar-track { background: transparent; }
+        ::-webkit-scrollbar-thumb { background: #374151; border-radius: 10px; }
+        table th, table td { white-space: nowrap; }
+      `}</style>
+      <Sidebar />
+      <div style={{ flex: 1, overflow: "auto", animation: "slideIn 0.4s ease" }} onClick={e => e.stopPropagation()}>
+        <CurrentPage />
+      </div>
+      {toast && <Toast message={toast.message} type={toast.type} onClose={() => setToast(null)} />}
+    </div>
+  );
+}
